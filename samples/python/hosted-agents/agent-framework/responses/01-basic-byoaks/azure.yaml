@@ -32,7 +32,14 @@ services:
           capacity: 10
 
   agent-framework-agent-basic-responses-byoaks:
+    project: src/agent-framework-agent-basic-responses
     host: azure.ai.agent
+    language: docker
+    docker:
+      path: ./Dockerfile
+      context: .
+      platform: linux/amd64
+      remoteBuild: true
     metadata:
       tags:
         - Agent Framework
@@ -40,11 +47,6 @@ services:
         - BYO AKS
         - Responses Protocol
         - Streaming
-    project: src/agent-framework-agent-basic-responses
-    language: python
-    codeConfiguration:
-      runtime: python_3_13
-      entryPoint: main.py
     uses:
       - ai-project
     kind: hosted

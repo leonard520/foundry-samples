@@ -11,8 +11,14 @@ this sample's referenced source files without cloning the full repository.
 mkdir my-basic-byoaks-agent
 cd my-basic-byoaks-agent
 
-azd ai agent init -m https://github.com/leonard520/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/01-basic-byoaks/azure.yaml
+azd ai agent init \
+  --deploy-mode container \
+  -m https://github.com/leonard520/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/01-basic-byoaks/azure.yaml
 ```
+
+Keep `--deploy-mode container` when automating initialization. Without it,
+non-interactive `azd ai agent init` defaults detected Python projects back to
+code deployment, which is not supported by BYO AKS agent hosting.
 
 ## Configure BYO AKS resources
 
@@ -40,7 +46,8 @@ azd ai agent invoke "Hi"
 ```
 
 The `ai-project` service provisions the Foundry project configuration, BYO AKS
-hosting binding, and model deployment. The
-`agent-framework-agent-basic-responses-byoaks` service packages the Python code
-under `src/agent-framework-agent-basic-responses` and deploys it as a hosted
-agent using the Responses protocol.
+hosting binding, and model deployment. Because BYO AKS does not support
+code-based agent deployment, the `agent-framework-agent-basic-responses-byoaks`
+service uses `language: docker` and Azure Container Registry remote build. The
+Docker build context is `src/agent-framework-agent-basic-responses`, and the
+resulting image is deployed as a hosted agent using the Responses protocol.
