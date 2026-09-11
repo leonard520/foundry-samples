@@ -12,13 +12,13 @@ mkdir my-basic-byoaks-agent
 cd my-basic-byoaks-agent
 
 azd ai agent init \
-  --deploy-mode container \
   -m https://github.com/leonard520/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/01-basic-byoaks/azure.yaml
 ```
 
-Keep `--deploy-mode container` when automating initialization. Without it,
-non-interactive `azd ai agent init` defaults detected Python projects back to
-code deployment, which is not supported by BYO AKS agent hosting.
+Do not add `--deploy-mode container` to this interactive initialization
+command. The manifest already selects Docker container deployment. With an
+existing network-injected project, explicitly forcing the deployment mode can
+cause azd to finalize the service again and remove `docker.remoteBuild`.
 
 ## Configure BYO AKS resources
 
@@ -41,26 +41,19 @@ project already has a compatible deployment with a different name, set
 
 ```bash
 azd provision
-bash ./scripts/deploy-remote.sh
+azd env set AZD_AGENT_SKIP_ACR false
+azd deploy
 azd ai agent invoke "Hi"
 ```
 
 The `ai-project` service provisions the Foundry project configuration, BYO AKS
 hosting binding, and model deployment. Because BYO AKS does not support
 code-based agent deployment, the `agent-framework-agent-basic-responses-byoaks`
-service uses a container image.
-
-For an existing network-injected Foundry project, `azd ai agent init` disables
-its built-in source-container remote build and a plain `azd deploy` requires a
-local Docker daemon. `scripts/deploy-remote.sh` avoids that path: it submits the
-Dockerfile and source context to Azure Container Registry with `az acr build`,
-then passes the resulting image directly to `azd deploy --from-package`.
-
-The script defaults to a UTC timestamp image tag. To provide a tag explicitly:
-
-```bash
-bash ./scripts/deploy-remote.sh my-tag
-```
+service uses `language: docker`, targets `linux/amd64`, and sets
+`docker.remoteBuild: true`. `AZD_AGENT_SKIP_ACR=false` ensures azd uses the
+configured Azure Container Registry instead of skipping its ACR packaging
+path. A normal `azd deploy` then uploads the Docker build context and runs the
+build remotely in ACR.
 
 ACR Tasks remote build requires permission for
 `Microsoft.ContainerRegistry/registries/scheduleRun/action`. It also requires
