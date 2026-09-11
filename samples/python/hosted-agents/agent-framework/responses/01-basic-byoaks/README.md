@@ -37,17 +37,32 @@ The manifest declares a `gpt-5.4-mini` model deployment. If the active Foundry
 project already has a compatible deployment with a different name, set
 `AZURE_AI_MODEL_DEPLOYMENT_NAME` to that deployment name instead.
 
-## Provision and deploy
+## Provision and deploy with an ACR remote build
 
 ```bash
 azd provision
-azd deploy
+bash ./scripts/deploy-remote.sh
 azd ai agent invoke "Hi"
 ```
 
 The `ai-project` service provisions the Foundry project configuration, BYO AKS
 hosting binding, and model deployment. Because BYO AKS does not support
 code-based agent deployment, the `agent-framework-agent-basic-responses-byoaks`
-service uses `language: docker` and Azure Container Registry remote build. The
-Docker build context is `src/agent-framework-agent-basic-responses`, and the
-resulting image is deployed as a hosted agent using the Responses protocol.
+service uses a container image.
+
+For an existing network-injected Foundry project, `azd ai agent init` disables
+its built-in source-container remote build and a plain `azd deploy` requires a
+local Docker daemon. `scripts/deploy-remote.sh` avoids that path: it submits the
+Dockerfile and source context to Azure Container Registry with `az acr build`,
+then passes the resulting image directly to `azd deploy --from-package`.
+
+The script defaults to a UTC timestamp image tag. To provide a tag explicitly:
+
+```bash
+bash ./scripts/deploy-remote.sh my-tag
+```
+
+ACR Tasks remote build requires permission for
+`Microsoft.ContainerRegistry/registries/scheduleRun/action`. It also requires
+an ACR configuration that permits ACR Tasks; a registry with restrictive
+network rules may need an ACR task agent pool or a different build service.
